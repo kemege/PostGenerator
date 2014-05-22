@@ -1,0 +1,23 @@
+{
+    "name": "FDUPT Post Generator",
+    "version": "0.998",
+    "manifest_version": 2,
+    "icons": {
+      "128": "icon-128.png"
+      },
+    "content_scripts": [{
+        "js": [
+               "jquery-1.7.2.min.js",
+               "jquery-ui-1.8.22.custom.min.js",
+               "PostGenerator.js"
+              ],
+        "css": [ "jquery-ui-1.8.22.custom.css" ],
+        "matches": [ "http://pt.vm.fudan.edu.cn/index.php?action=post*" ],
+        "run_at": "document_end"
+    }],
+    "permissions": [
+      "http://pt.vm.fudan.edu.cn/",
+      "http://api.douban.com/",
+      "http://www.imdb.com/"
+    ]
+}
