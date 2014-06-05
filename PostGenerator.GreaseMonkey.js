@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           Post Generator
 // @description    Generate a post with a given IMDB id
-// @version        0.99
+// @version        0.999
 // @author         kemege
 // @namespace      kemege
 // @include        http://pt.vm.fudan.edu.cn/index.php?action=post*

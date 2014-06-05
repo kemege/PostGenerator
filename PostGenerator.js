@@ -129,9 +129,12 @@ function fillForm() {
 		templateMessage = '[attachthumb=1]\n◎译　　　名: __translated_title__\n◎片　　　名: __title__\n◎别　　　名: __alias__\n◎年　　　代: __year__\n◎国　　　家: __country__\n◎类　　　别: __genre__\n◎语　　　言: __language__\n◎IMDB　评分: __ratingValue__/10.0 from __ratingCount__ users (__today__)\n◎IMDB　链接: [url]http://www.imdb.com/title/tt__imdbID__/[/url]\n◎导　　　演: __director__\n◎主　　　演: __actors__\n\n◎简　　　介:\n　　__plot__';
 	} else {
 		// drama template
-		templateMessage = '[attachthumb=1]\n◎译　　　名: __translated_title__\n◎片　　　名: __title__\n◎别　　　名: __alias__\n◎首　　　播: \n◎国　　　家: __country__\n◎类　　　别: __genre__\n◎语　　　言: __language__\n◎IMDB　评分: __ratingValue__/10.0 from __ratingCount__ users (__today__)\n◎IMDB　链接: [url]http://www.imdb.com/title/tt__imdbID__/[/url]\n◎导　　　演: __director__\n◎集　　　数: \n◎电　视　台: \n◎编　　　剧: __writer__\n◎主　　　演: __actors__\n\n◎简　　　介:\n　　__plot__';
+		templateMessage = '[attachthumb=1]\n◎译　　　名: __translated_title__\n◎片　　　名: __title__\n◎别　　　名: __alias__\n◎首　　　播: \n◎国　　　家: __country__\n◎类　　　别: __genre__\n◎语　　　言: __language__\n◎IMDB　评分: __ratingValue__/10.0 from __ratingCount__ users (__today__)\n◎IMDB　链接: [url]http://www.imdb.com/title/tt__imdbID__/[/url]\n◎集　　　数: \n◎电　视　台: \n◎编　　　剧: __writer__\n◎导　　　演: __director__\n◎主　　　演: __actors__\n\n◎简　　　介:\n　　__plot__';
 	};
 	var templateTitle = '__title__ / __translated_title__ (__year__)';
+	if (!('alias' in dataArray) || dataArray['alias'] == '') {
+		templateMessage = templateMessage.replace('◎别　　　名: __alias__\n', '');
+	};
 	textTitle.value = parseTemplate(templateTitle);
 	if(parseInt(imdbID) > 0) textIMDB.value = imdbID;
 	if(parseInt(doubanID) > 0) textDouban.value = doubanID;
@@ -199,7 +202,7 @@ function fetchIMDB() {
 			dataArray['ratingValue'] = imdbPage.find('span[itemprop=ratingValue]').text();
 			dataArray['ratingCount'] = imdbPage.find('span[itemprop=ratingCount]').text();
 			dataArray['plot'] = imdbPage.find('div.inline[itemprop=description]').text().trim().replace(/[ \n\t]+/g, ' ');
-			dataArray['year'] = imdbPage.find('span.itemprop[itemprop=name]').next().text();
+			dataArray['year'] = imdbPage.find('h1.header .nobr').text();
 			dataArray['year'] = /\d{4}/.exec(dataArray['year']);
 			dataArray['time'] = new Date();
 			dataArray['today'] = dataArray['time'].getFullYear() + '' + (dataArray['time'].getMonth()<9?'0'+(dataArray['time'].getMonth()+1):dataArray['time'].getMonth()+1) + '' + (dataArray['time'].getDate()<10?'0'+dataArray['time'].getDate():dataArray['time'].getDate());
