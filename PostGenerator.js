@@ -87,7 +87,8 @@ function searchDouban(title) {
 				document.body.appendChild(dialog);
 				dialog.innerHTML = '';
 				for (var i in data['subjects']) {
-					dialog.innerHTML += '<button class="selectDouban" douban="'+data['subjects'][i]['id']+'">'+data['subjects'][i]['original_title']+'/'+data['subjects'][i]['title']+'</button><br/>';
+					if(data['subjects'][i]['year'] == dataArray['year'])
+						dialog.innerHTML += '<button class="selectDouban" douban="'+data['subjects'][i]['id']+'">'+data['subjects'][i]['original_title']+' / '+data['subjects'][i]['title']+' ('+data['subjects'][i]['year']+') ['+data['subjects'][i]['subtype']+']</button><br/>';
 				};
 				dialog.innerHTML += '<button id="skipDouban">不，这些都不匹配</button><br/>';
 				dialog.innerHTML = '<center>' + dialog.innerHTML + '</center>';
