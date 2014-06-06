@@ -69,6 +69,7 @@ function parseTemplate(template) {
 }
 
 function searchDouban(title) {
+	console.debug('Searching Douban with "' + title + '"......');
 	$.ajax({
 		url: 'http://api.douban.com/v2/movie/search?&count=5&q=' + title,
 		type: 'GET',
@@ -104,11 +105,11 @@ function searchDouban(title) {
 				$('#promptDouban').dialog({
 					width: 600
 				});
-			} else if (data['total']>0) {
-				doubanID = parseInt($(this).attr('douban'));
+			} else if (data['total'] == 1) {
+				doubanID = parseInt(data['subjects'][0]['id']);
 				fetchDouban();
 			} else {
-				fillForm();
+				fetchMTime();
 			}
 		},
 		error: function () {
@@ -119,6 +120,7 @@ function searchDouban(title) {
 }
 
 function fillForm() {
+	console.debug('Generating post content ......');
 	var textTitle = document.querySelector('input.input_text[name=subject]');
 	var textMessage = document.querySelector('textarea.editor[name=message]');
 	var textIMDB = document.querySelector('input#imdb[name=imdb]');
@@ -142,13 +144,14 @@ function fillForm() {
 	// append IMDB and Douban links for correction
 	var IMDBLink = ' IMDB链接 : ' + (imdbID?('<a target="_blank" href="'+'http://www.imdb.com/title/tt' + imdbID+'">'+'http://www.imdb.com/title/tt' + imdbID+'</a>'):'无');
 	IMDBLink += ' 豆瓣链接 : ' + (doubanID?('<a target="_blank" href="'+'http://movie.douban.com/subject/' + doubanID+'">'+'http://movie.douban.com/subject/' + doubanID+'</a>'):'无');
+	IMDBLink += ' 时光网链接 : ' + (doubanID?('<a target="_blank" href="'+'http://movie.mtime.com/' + mTimeID + '/fullcredits.html">'+'http://movie.mtime.com/' + mTimeID + '/fullcredits.html</a>'):'无');
 	$('#generateWithIMDB').html($('#generateWithIMDB').html() + '<br/>' + IMDBLink);
 }
 
 function fetchDouban() {
 	if (!(parseInt(doubanID)>0)) {
-		fillForm();
-		console.debug('Invalid Douban ID!');
+		console.debug('Invalid Douban ID! Checking MTime....');
+		fetchMTime();
 		return 2333;
 	}
 	console.debug('Fetching data for Douban='+doubanID);
@@ -178,7 +181,7 @@ function fetchDouban() {
 				}
 				dataArray['director'] = dataArray['directors_list'].join('/');
 			};
-			fillForm();
+			fetchMTime();
 		},
 		error: function () {
 			displayMessage('错误', '无法连接到豆瓣网站。<br/>请检查您的外网连接。');
@@ -267,14 +270,49 @@ function fetchIMDB() {
 	};
 }
 
+function fetchMTime() {
+	if (!(parseInt(mTimeID)>0)) {
+		console.debug('Invalid MTime ID!');
+		fillForm();
+		return 23;
+	}
+	console.debug('Fetching data for MTime='+mTimeID);
+	$.ajax({
+		url: 'http://movie.mtime.com/' + mTimeID + '/fullcredits.html',
+		type: 'GET',
+		processData: true,
+		async: false,
+		dataType: 'text',
+		success: function(data) {
+			// parse MTime page here
+			mTimePage = $(data);
+			// replace Actor list
+			dataArray['actors'] = [];
+			mTimePage.find('.db_actor dl dd').each(function (index, element) {
+				if (index>=30) {
+					return;
+				};
+				var actor = $(element).find('.actor_tit').text().trim().replace(/ +/g, ' ');
+				var character = $(element).find('.character_tit').text().trim().replace(/ +/g, ' ');
+				dataArray['actors'].push(actor + '  ......  ' + character);
+			});
+			dataArray['actors'] = dataArray['actors'].join('\n　　　　　　　');
+			fillForm();
+		},
+		error: function () {
+			displayMessage('错误', '无法连接到MTime网站。<br/>请检查您的外网连接。');
+			return 233;
+		}
+	});
+}
+
 function go() {
 	imdbID = $('input#textIMDB').val();
 	imdbID = /tt(\d+)/.exec(imdbID) ? /tt(\d+)/.exec(imdbID)[1] : '';
 	doubanID = $('input#textDouban').val();
+	mTimeID = $('input#textMTime').val();
 	if (parseInt(imdbID)>0)
 		fetchIMDB();
-	else if (parseInt(doubanID)>0)
-		fetchDouban();
 }
 // Register some functions and variables in the global scope
 var dataArray = {
@@ -288,6 +326,7 @@ var dataArray = {
 };
 var imdbID = undefined;
 var doubanID = undefined;
+var mTimeID = undefined;
 // Add a textbox and a button for triggering
 var description = document.createElement('dt');
 description.innerHTML = '根据IMDB ID生成介绍贴';
@@ -301,6 +340,10 @@ var doubanTextbox = document.createElement('input');
 doubanTextbox.type = 'text';
 doubanTextbox.setAttribute('placeholder', '豆瓣ID，如1234567')
 doubanTextbox.id = 'textDouban';
+var mTimeTextbox = document.createElement('input');
+mTimeTextbox.type = 'text';
+mTimeTextbox.setAttribute('placeholder', '时光网ID，如123456')
+mTimeTextbox.id = 'textMTime';
 var select = document.createElement('span');
 select.id = 'selectType';
 select.innerHTML = '<input type="radio" value="movie" id="movie" name="type" checked="checked"/><label for="movie">电影</label><input type="radio" value="drama" id="drama" name="type"/><label for="drama">美剧</label>';
@@ -310,6 +353,6 @@ buttonGo.id = 'searchOMDB';
 buttonGo.value = '生成';
 buttonGo.style = 'margin-left:5px;padding: 3px 5px;';
 buttonGo.onclick = go;
-$(form).append(textbox).append(doubanTextbox).append(select).append(buttonGo);
+$(form).append(textbox).append(doubanTextbox).append(mTimeTextbox).append(select).append(buttonGo);
 $('dl#post_header').append(description).append(form);
 // defineFunction('$(document).ready(function() {$("#selectType").buttonset();$("input#searchOMDB").button()});');
