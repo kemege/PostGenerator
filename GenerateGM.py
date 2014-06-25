@@ -1,12 +1,12 @@
+# -*- encoding: utf8 -*-
+import json, io
 
-import json
-
-original = open('PostGenerator.js', 'r')
-output = open('PostGenerator.user.js', 'w')
-manifest = open('manifest.json', 'r')
+original = io.open('PostGenerator.js', 'r', encoding="utf-8")
+output = io.open('PostGenerator.user.js', 'w', encoding="utf-8")
+manifest = io.open('manifest.json', 'r', encoding="utf-8")
 
 metainfo = json.loads(manifest.read())
-print(metainfo.keys())
+
 metainfo['include'] = metainfo['content_scripts'][0]['matches'][0]
 output.write('''
 // ==UserScript==
@@ -17,21 +17,30 @@ output.write('''
 // @namespace      kemege
 // @include        %(include)s
 // @icon           http://pt.vm.fudan.edu.cn/favicon.ico
+// @require        http://ajax.aspnetcdn.com/ajax/jQuery/jquery-1.8.2.min.js
+// @require        https://code.jquery.com/ui/1.8.2/jquery-ui.min.js
 // @grant          GM_xmlhttpRequest
 // ==/UserScript==
 
 function GMAjax(object) {
-	return GM_xmlhttpRequest({
+	var x = GM_xmlhttpRequest({
 		method: object.type,
 		url: object.url,
-		synchronous: !object.async,
-		onload: object.success,
-		onerror: object.error
+		synchronous: true,
 		});
+
+	if (object.processData == true && object.dataType == 'json') {
+		object.success($.parseJSON(x.responseText));
+	} else {
+		object.success(x.responseText);
+	}
+
 }
+
+
 ''' % metainfo)
 
-script = original.read().decode('utf-8')
+script = original.read()
 script = script.replace('$.ajax', 'GMAjax')
 output.write(script)
 
