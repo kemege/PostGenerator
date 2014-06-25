@@ -87,8 +87,7 @@ function searchDouban(title) {
 				document.body.appendChild(dialog);
 				dialog.innerHTML = '';
 				for (var i in data['subjects']) {
-					if(data['subjects'][i]['year'] == dataArray['year'])
-						dialog.innerHTML += '<button class="selectDouban" douban="'+data['subjects'][i]['id']+'">'+data['subjects'][i]['original_title']+' / '+data['subjects'][i]['title']+' ('+data['subjects'][i]['year']+') ['+data['subjects'][i]['subtype']+']</button><br/>';
+					dialog.innerHTML += '<button class="selectDouban" douban="'+data['subjects'][i]['id']+'">'+data['subjects'][i]['original_title']+' / '+data['subjects'][i]['title']+' ('+data['subjects'][i]['year']+') ['+data['subjects'][i]['subtype']+']</button><br/>';
 				};
 				dialog.innerHTML += '<button id="skipDouban">不，这些都不匹配</button><br/>';
 				dialog.innerHTML = '<center>' + dialog.innerHTML + '</center>';
@@ -295,7 +294,12 @@ function fetchMTime() {
 				};
 				var actor = $(element).find('.actor_tit').text().trim().replace(/ +/g, ' ');
 				var character = $(element).find('.character_tit').text().trim().replace(/ +/g, ' ');
-				dataArray['actors'].push(actor + '  ......  ' + character);
+				if (character.trim()=='') {
+					dataArray['actors'].push(actor);
+				} else {
+					dataArray['actors'].push(actor + '  ......  ' + character);
+				};
+				
 			});
 			dataArray['actors'] = dataArray['actors'].join('\n　　　　　　　');
 			fillForm();
