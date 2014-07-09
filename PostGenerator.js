@@ -145,7 +145,7 @@ function fillForm() {
 	var IMDBLink = ' IMDB链接 : ' + (imdbID?('<a target="_blank" href="'+'http://www.imdb.com/title/tt' + imdbID+'">'+'http://www.imdb.com/title/tt' + imdbID+'</a>'):'无');
 	IMDBLink += ' 豆瓣链接 : ' + (doubanID?('<a target="_blank" href="'+'http://movie.douban.com/subject/' + doubanID+'">'+'http://movie.douban.com/subject/' + doubanID+'</a>'):'无');
 	IMDBLink += ' 时光网链接 : ' + (doubanID?('<a target="_blank" href="'+'http://movie.mtime.com/' + mTimeID + '/fullcredits.html">'+'http://movie.mtime.com/' + mTimeID + '/fullcredits.html</a>'):'无');
-	$('#generateWithIMDB').html($('#generateWithIMDB').html() + '<br/>' + IMDBLink);
+	$('#generateWithIMDB_Links').html(IMDBLink);
 }
 
 function fetchDouban() {
@@ -198,6 +198,14 @@ function fetchIMDB() {
 		async: false,
 		dataType: 'text',
 		success: function(data) {
+			// prepare dataArray
+			dataArray['title'] = undefined;
+			dataArray['genres'] = [];
+			dataArray['directors'] = [];
+			dataArray['actors'] = [];
+			dataArray['languages'] = [];
+			dataArray['writers'] = [];
+			dataArray['countries'] = [];
 			// parse IMDB DOM here
 			imdbPage = $(data);
 			dataArray['imdbID'] = imdbID;
@@ -321,13 +329,7 @@ function go() {
 }
 // Register some functions and variables in the global scope
 var dataArray = {
-	title: undefined,
-	genres: [],
-	directors: [],
-	actors: [],
-	languages: [],
-	writers: [],
-	countries: []
+
 };
 var imdbID = undefined;
 var doubanID = undefined;
@@ -352,12 +354,14 @@ mTimeTextbox.id = 'textMTime';
 var select = document.createElement('span');
 select.id = 'selectType';
 select.innerHTML = '<input type="radio" value="movie" id="movie" name="type" checked="checked"/><label for="movie">电影</label><input type="radio" value="drama" id="drama" name="type"/><label for="drama">美剧</label>';
+var links = document.createElement('div');
+links.id = 'generateWithIMDB_Links';
 var buttonGo = document.createElement('input');
 buttonGo.type = 'button';
 buttonGo.id = 'searchOMDB';
 buttonGo.value = '生成';
 buttonGo.style = 'margin-left:5px;padding: 3px 5px;';
 buttonGo.onclick = go;
-$(form).append(textbox).append(doubanTextbox).append(mTimeTextbox).append(select).append(buttonGo);
+$(form).append(textbox).append(doubanTextbox).append(mTimeTextbox).append(select).append(buttonGo).append(links);
 $('dl#post_header').append(description).append(form);
 // defineFunction('$(document).ready(function() {$("#selectType").buttonset();$("input#searchOMDB").button()});');
