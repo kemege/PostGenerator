@@ -94,11 +94,11 @@ function searchDouban(title) {
 				$('.selectDouban').button().click(function() {
 					// fetch data for selected Douban ID
 					doubanID = parseInt($(this).attr('douban'));
-					$('#promptDouban').dialog('close');
+					$('#promptDouban').dialog('destroy');
 					fetchDouban();
 				});
 				$('#skipDouban').button().click(function() {
-					$('#promptDouban').dialog('close');
+					$('#promptDouban').dialog('destroy');
 					doubanID = 0;
 					fetchDouban();
 				});
@@ -144,7 +144,7 @@ function fillForm() {
 	// append IMDB and Douban links for correction
 	var IMDBLink = ' IMDB链接 : ' + (imdbID?('<a target="_blank" href="'+'http://www.imdb.com/title/tt' + imdbID+'">'+'http://www.imdb.com/title/tt' + imdbID+'</a>'):'无');
 	IMDBLink += ' 豆瓣链接 : ' + (doubanID?('<a target="_blank" href="'+'http://movie.douban.com/subject/' + doubanID+'">'+'http://movie.douban.com/subject/' + doubanID+'</a>'):'无');
-	IMDBLink += ' 时光网链接 : ' + (doubanID?('<a target="_blank" href="'+'http://movie.mtime.com/' + mTimeID + '/fullcredits.html">'+'http://movie.mtime.com/' + mTimeID + '/fullcredits.html</a>'):'无');
+	IMDBLink += ' 时光网链接 : ' + (mTimeID?('<a target="_blank" href="'+'http://movie.mtime.com/' + mTimeID + '/fullcredits.html">'+'http://movie.mtime.com/' + mTimeID + '/fullcredits.html</a>'):'无');
 	$('#generateWithIMDB_Links').html(IMDBLink);
 }
 
@@ -198,14 +198,6 @@ function fetchIMDB() {
 		async: false,
 		dataType: 'text',
 		success: function(data) {
-			// prepare dataArray
-			dataArray['title'] = undefined;
-			dataArray['genres'] = [];
-			dataArray['directors'] = [];
-			dataArray['actors'] = [];
-			dataArray['languages'] = [];
-			dataArray['writers'] = [];
-			dataArray['countries'] = [];
 			// parse IMDB DOM here
 			imdbPage = $(data);
 			dataArray['imdbID'] = imdbID;
@@ -324,13 +316,20 @@ function go() {
 	imdbID = /tt(\d+)/.exec(imdbID) ? /tt(\d+)/.exec(imdbID)[1] : '';
 	doubanID = $('input#textDouban').val();
 	mTimeID = $('input#textMTime').val();
+	dataArray = {
+		'title': undefined,
+		'genres': [],
+		'directors': [],
+		'actors': [],
+		'languages': [],
+		'writers': [],
+		'countries': []
+	}
 	if (parseInt(imdbID)>0)
 		fetchIMDB();
 }
 // Register some functions and variables in the global scope
-var dataArray = {
-
-};
+var dataArray = {};
 var imdbID = undefined;
 var doubanID = undefined;
 var mTimeID = undefined;
