@@ -146,6 +146,8 @@ function fillForm() {
 	IMDBLink += ' 豆瓣链接 : ' + (doubanID?('<a target="_blank" href="'+'http://movie.douban.com/subject/' + doubanID+'">'+'http://movie.douban.com/subject/' + doubanID+'</a>'):'无');
 	IMDBLink += ' 时光网链接 : ' + (mTimeID?('<a target="_blank" href="'+'http://movie.mtime.com/' + mTimeID + '/fullcredits.html">'+'http://movie.mtime.com/' + mTimeID + '/fullcredits.html</a>'):'无');
 	$('#generateWithIMDB_Links').html(IMDBLink);
+	// fill in tags
+	$('input[name=tags]').val(dataArray['year'] + '|' + dataArray['genres'].join('|'));
 }
 
 function fetchDouban() {
