@@ -147,7 +147,11 @@ function fillForm() {
 	IMDBLink += ' 时光网链接 : ' + (mTimeID?('<a target="_blank" href="'+'http://movie.mtime.com/' + mTimeID + '/fullcredits.html">'+'http://movie.mtime.com/' + mTimeID + '/fullcredits.html</a>'):'无');
 	$('#generateWithIMDB_Links').html(IMDBLink);
 	// fill in tags
-	$('input[name=tags]').val(dataArray['year'] + '|' + dataArray['genres'].join('|'));
+	if ($('input[name="type"]:checked', '#selectType').val()=='movie') {
+		$('input[name=tags]').val(dataArray['year'] + '|' + dataArray['genres'].join('|'));
+	} else {
+		$('input[name=tags]').val(dataArray['genres'].join('|'));
+	}
 }
 
 function fetchDouban() {
