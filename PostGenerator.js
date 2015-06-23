@@ -148,7 +148,7 @@ function fillForm() {
 	$('#generateWithIMDB_Links').html(IMDBLink);
 	// fill in tags
 	if ($('input[name="type"]:checked', '#selectType').val()=='movie') {
-		$('input[name=tags]').val(dataArray['year'] + '|' + dataArray['genres'].join('|'));
+		$('input[name=tags]').val(dataArray['year'] + '|' + dataArray['genres'].join('|') + '|' + dataArray['countries'].join('|'));
 	} else {
 		$('input[name=tags]').val(dataArray['genres'].join('|'));
 	}
@@ -170,7 +170,7 @@ function fetchDouban() {
 		success: function(data) {
 			// parse Douban JSON array here
 			dataArray['translated_title'] = data['title'];
-			dataArray['plot'] = data['summary'];
+			dataArray['plot'] = data['summary'].replace(/\n/g, '\n　　');
 			dataArray['alias'] = data['aka'].join('/');
 			dataArray['country'] = data['countries'].join('/');
 			if (data['casts'].length>0) {
