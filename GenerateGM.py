@@ -21,23 +21,6 @@ output.write('''
 // @require        https://code.jquery.com/ui/1.8.2/jquery-ui.min.js
 // @grant          GM_xmlhttpRequest
 // ==/UserScript==
-
-function GMAjax(object) {
-	var x = GM_xmlhttpRequest({
-		method: object.type,
-		url: object.url,
-		synchronous: true,
-		});
-
-	if (object.processData == true && object.dataType == 'json') {
-		object.success($.parseJSON(x.responseText));
-	} else {
-		object.success(x.responseText);
-	}
-
-}
-
-
 ''' % metainfo)
 
 script = original.read()
