@@ -120,31 +120,71 @@ function fillForm() {
 	var textIMDB = $('input#imdb[name=imdb]');
 	var textDouban = $('input#douban[name=douban]');
 	var templateMessage;
-	if ($('input[name="type"]:checked', '#selectType').val()=='movie') {
+	var templateTitle;
+	var fullTitle;
+
+	var postType = $('input[name="type"]:checked', '#selectType').val();
+
+	if (postType === 'movie') {
 		// movie template
 		templateMessage = '[attachthumb=1]\n◎译　　　名: __translated_title__\n◎片　　　名: __title__\n◎别　　　名: __alias__\n◎年　　　代: __year__\n◎国　　　家: __country__\n◎类　　　别: __genre__\n◎语　　　言: __language__\n◎IMDB　评分: __ratingValue__/10.0 from __ratingCount__ users (__today__)\n◎IMDB　链接: [url]http://www.imdb.com/title/tt__imdbID__/[/url]\n◎导　　　演: __director__\n◎主　　　演: __actors__\n\n◎简　　　介:\n　　__plot__';
-	} else {
+	} else if (postType === 'drama') {
 		// drama template
 		templateMessage = '[attachthumb=1]\n◎译　　　名: __translated_title__\n◎片　　　名: __title__\n◎别　　　名: __alias__\n◎首　　　播: \n◎国　　　家: __country__\n◎类　　　别: __genre__\n◎语　　　言: __language__\n◎IMDB　评分: __ratingValue__/10.0 from __ratingCount__ users (__today__)\n◎IMDB　链接: [url]http://www.imdb.com/title/tt__imdbID__/[/url]\n◎集　　　数: \n◎电　视　台: \n◎编　　　剧: __writer__\n◎导　　　演: __director__\n◎主　　　演: __actors__\n\n◎简　　　介:\n　　__plot__';
-	};
-	var templateTitle = '__title__ / __translated_title__ (__year__)';
+	} else {
+		// animation template
+		templateMessage = '[attachthumb=1]\n英文名：__english_title__\n日文名：__title__\n中文名：__translated_title__\n时　间：__time__\nAniDB链接： __anidb__\n官方网站： __official_site__\n\nSTORY\n　　__plot__\n\nSTAFF\n__staff__\n\nCAST\n__actors__';
+	}
+
 	if (!('alias' in dataArray) || dataArray['alias'] == '') {
 		templateMessage = templateMessage.replace('◎别　　　名: __alias__\n', '');
 	};
-	textTitle.val(parseTemplate(templateTitle));
+
+	if (postType === 'movie' || postType === 'drama') {
+		templateTitle = '__title__ / __translated_title__ (__year__)';
+	} else {
+		templateTitle = '__english_title__ / __title__ / __translated_title__ (__year__)';
+	}
+	fullTitle = parseTemplate(templateTitle);
+	if (fullTitle.length <= 80) {
+		textTitle.val(fullTitle);
+	} else {
+		displayMessage("提示", "自动生成的标题过长（超出80字符），请根据实际情况手动填写。");
+	}
+
 	if(parseInt(imdbID) > 0) textIMDB.val(imdbID);
 	if(parseInt(doubanID) > 0) textDouban.val(doubanID);
 	textMessage.val(parseTemplate(templateMessage));
+
 	// append IMDB and Douban links for correction
-	var IMDBLink = ' IMDB链接 : ' + (imdbID ? ('<a target="_blank" href="'+'http://www.imdb.com/title/tt' + imdbID+'">'+'http://www.imdb.com/title/tt' + imdbID+'</a>') : '无');
-	IMDBLink += ' 豆瓣链接 : ' + (doubanID ? ('<a target="_blank" href="'+'http://movie.douban.com/subject/' + doubanID+'">'+'http://movie.douban.com/subject/' + doubanID+'</a>') : '无');
-	IMDBLink += ' 时光网链接 : ' + (mTimeID ? ('<a target="_blank" href="'+'http://movie.mtime.com/' + mTimeID + '/fullcredits.html">'+'http://movie.mtime.com/' + mTimeID + '/fullcredits.html</a>') : '无');
-	$('#generateWithIMDB_Links').html(IMDBLink);
-	// fill in tags
-	if ($('input[name="type"]:checked', '#selectType').val()=='movie') {
-		$('input[name=tags]').val(dataArray['year'] + '|' + dataArray['genres'].join('|') + '|' + dataArray['countries'].join('|'));
+	var IMDBLink = '';
+	if (postType === 'movie' || postType === 'drama') {
+		IMDBLink += 'IMDB链接 : ' + (imdbID ? ('<a target="_blank" href="'+'http://www.imdb.com/title/tt' + imdbID+'">'+'http://www.imdb.com/title/tt' + imdbID+'</a>') : '无');
+		IMDBLink += '<br/>豆瓣链接 : ' + (doubanID ? ('<a target="_blank" href="'+'http://movie.douban.com/subject/' + doubanID+'">'+'http://movie.douban.com/subject/' + doubanID+'</a>') : '无');
+		IMDBLink += '<br/>时光网链接 : ' + (mTimeID ? ('<a target="_blank" href="'+'http://movie.mtime.com/' + mTimeID + '/fullcredits.html">'+'http://movie.mtime.com/' + mTimeID + '/fullcredits.html</a>') : '无');
 	} else {
+		IMDBLink += 'Bangumi链接 : ' + (bgmID ? ('<a target="_blank" href="'+'http://bgm.tv/subject/' + bgmID + '">'+'http://bgm.tv/subject/' + bgmID + '</a>') : '无');
+		IMDBLink += '<br/>AniDB链接 : ' + (bgmID ? ('<a target="_blank" href="'+'http://anidb.net/a' + anidbID + '">'+'http://anidb.net/a' + anidbID + '</a>') : '无');
+	}
+
+	$('#generateWithIMDB_Links').html(IMDBLink);
+
+	// fill in tags
+	if (postType === 'movie') {
+		$('input[name=tags]').val(dataArray['year'] + '|' + dataArray['genres'].join('|') + '|' + dataArray['countries'].join('|'));
+	} else if (postType === 'drama') {
 		$('input[name=tags]').val(dataArray['genres'].join('|'));
+	} else {
+		var tags = ['Anime'];
+		if (dataArray['type'] == 'TV Series') {
+			tags.push('TV');
+			today = new Date();
+			if (parseInt(dataArray['year']) >= today.getUTCFullYear() && parseInt(dataArray['startDate'].slice(5,7)) > today.getUTCMonth()) {
+				tags.push('新番连载');
+			};
+		};
+		tags.push(dataArray['startDate'].slice(0,4) + '.' + parseInt(dataArray['startDate'].slice(5,7)));
+		$('input[name=tags]').val(tags.join('|'));
 	}
 }
 
@@ -338,11 +378,111 @@ function parseDoubanSearch(data) {
 	return defer.promise();
 }
 
+function parseBangumiAPI(data) {
+	// API reference: https://github.com/jabbany/dhufufu/blob/master/bangumi/api.txt
+	dataArray['actors_list'] = [];
+	for (var i = data['crt'].length - 1; i >= 0; i--) {
+		dataArray['actors_list'].push(data['crt'][i]['name'] + '： ' + (data['crt'][i]['actors'] ? data['crt'][i]['actors'][0]['name'] : 'N/A'));
+	}
+	dataArray['actors'] = dataArray['actors_list'].join('\n');
+
+	// rearrange staff by roles
+	var staff = {}
+	for (var i = data['staff'].length - 1; i >= 0; i--) {
+		for (var j = data['staff'][i]['jobs'].length - 1; j >= 0; j--) {
+			if (data['staff'][i]['jobs'][j] in staff) {
+				staff[data['staff'][i]['jobs'][j]].push(data['staff'][i]['name']);
+			} else {
+				staff[data['staff'][i]['jobs'][j]] = [data['staff'][i]['name']];
+			}
+		}
+	}
+	dataArray['staff'] = '';
+	for (var i in staff) {
+		dataArray['staff'] += i + '： ' + staff[i].join(', ') + '\n';
+	};
+
+	dataArray['plot'] = data['summary'].replace(/\n/g, '\n　　');
+	dataArray['title'] = data['name'];
+	dataArray['translated_title'] = data['name_cn'];
+	dataArray['time'] = data['air_date'].slice(0,4) + '.' + data['air_date'].slice(5,7);
+	dataArray['year'] = data['air_date'].slice(0,4);
+}
+
+function parseBangumi(page) {
+	var jobList = ['原作','导演','脚本','分镜','演出','音乐','人物原案','人物设定','系列构成','色彩设计','作画监督','摄影监督','原画','剪辑','音响监督','制片人','制作','音乐制作','动画制作'];
+	var bgmPage = $(page);
+	dataArray['staff_list'] = [];
+	dataArray['actors_list'] = [];
+
+	bgmPage.find('#browserItemList > li').each(function() {
+		// parse cast here
+		characterName = $(this).find('strong').text().trim();
+		voiceName = $(this).find('a[rel="v:starring"]').text().trim();
+		voiceName = voiceName || "N/A"
+		dataArray['actors_list'].push(characterName + ': ' + voiceName);
+	});
+	dataArray['actors'] = dataArray['actors_list'].join('\n');
+
+	bgmPage.find('#infobox > li').each(function() {
+		// parse staff here
+		var job = $(this).find('span.tip').text().trim();
+		if (jobList.indexOf(job.slice(0, -1)) > -1) {
+			dataArray['staff_list'].push(this.textContent.trim());
+		} else if (job.slice(0, -1) === '中文名') {
+			dataArray['translated_title'] = this.textContent.replace(/中文名:/, '').trim();
+		}
+	});
+	dataArray['staff'] = dataArray['staff_list'].join('\n');
+
+	dataArray['plot'] = bgmPage.find('#subject_summary').text().trim();
+}
+
+function parseAniDB(data) {
+	var parser = new DOMParser();
+	var xmlDoc = parser.parseFromString(data, 'text/xml');
+	var xml = $(xmlDoc);
+	var engTitleNodes = xml.find('title').filter(function() {
+		if (this.getAttribute('type') === 'main') return this;
+	});
+	if (engTitleNodes.length) {
+		dataArray['english_title'] = engTitleNodes[0].textContent;
+	}
+
+	var jpnTitleNodes = xml.find('title').filter(function() {
+		if (this.getAttribute('type') === 'official' && this.getAttribute('xml:lang') === 'ja') return this;
+	});
+	if (jpnTitleNodes.length) {
+		dataArray['title'] = jpnTitleNodes[0].textContent;
+	}
+	
+	var typeTag = xml.find('type');
+	if (typeTag.length > 0) {
+		dataArray['type'] = typeTag[0].textContent;
+	};
+
+	var dateTag = xml.find('startdate');
+	if (dateTag.length > 0) {
+		var startDate = dateTag[0].textContent;
+		dataArray['startDate'] = startDate;
+		dataArray['time'] = startDate.slice(0,4) + '.' + startDate.slice(5,7);
+		dataArray['year'] = startDate.slice(0,4);
+	};
+
+	var siteTag = xml.find('anime > url');
+	if (siteTag.length > 0) {
+		dataArray['official_site'] = siteTag[0].textContent;
+	};
+	dataArray['anidb'] = 'http://anidb.net/' + anidbID;
+}
+
 function *go() {
 	imdbID = $('input#textIMDB').val();
 	imdbID = /(\d+)/.exec(imdbID) ? /(\d+)/.exec(imdbID)[1] : '';
 	doubanID = $('input#textDouban').val();
 	mTimeID = $('input#textMTime').val();
+	bgmID = $('input#textBangumi').val();
+	anidbID = $('input#textAniDB').val();
 	dataArray = {
 		'title': undefined,
 		'genres': [],
@@ -362,7 +502,7 @@ function *go() {
 			updateStatus('Finished getting IMDB');
 			hasData = true;
 		}
-		if (!(parseInt(doubanID) > 0)) {
+		if (!(parseInt(doubanID) > 0) && parseInt(imdbID) > 0) {
 			updateStatus('Searching Douban');
 			searchDoubanJSON = yield getURL('http://api.douban.com/v2/movie/search?&count=5&q=' + dataArray['title']).then(JSON.parse, showError);
 			searchDouban = yield parseDoubanSearch(searchDoubanJSON).then(function (res) {doubanID = res;});
@@ -381,6 +521,21 @@ function *go() {
 			parseMTime(MTimePage);
 			updateStatus('Finished getting MTime');
 		}
+		if (parseInt(bgmID) > 0) {
+			updateStatus('Getting Bangumi');
+			// BangumiPage = yield getURL('http://api.bgm.tv/subject/' + bgmID + '?responseGroup=large').then(JSON.parse, showError);
+			BangumiPage = yield getURL('http://bgm.tv/subject/' + bgmID);
+			BangumiPage = BangumiPage.replace(/<img/g, '<nimg'); // Avoid loading images in Bangumi Page
+			parseBangumi(BangumiPage);
+			hasData = true;
+			updateStatus('Finished getting Bangumi');
+		}
+		if (parseInt(anidbID) > 0) {
+			updateStatus('Getting AniDB');
+			AniDBPage = yield getURL('http://api.anidb.net:9001/httpapi?request=anime&client=postgenerator&clientver=1&protover=1&aid=' + anidbID);
+			parseAniDB(AniDBPage);
+			updateStatus('Finished getting AniDB');
+		}
 
 		if (hasData) {
 			fillForm();
@@ -390,8 +545,6 @@ function *go() {
 	catch (err) {
 		showError(err);
 	}
-	
-
 }
 
 function spawn(generatorFunc) {
@@ -423,16 +576,38 @@ var dataArray = {};
 var imdbID = undefined;
 var doubanID = undefined;
 var mTimeID = undefined;
+var bgmID = undefined;
+var anidbID = undefined;
 var hasData = false;
 // Add a textbox and a button for triggering
 var description = $('<dt>根据IMDB ID生成介绍贴</dt>');
 var form = $('<dd id="generateWithIMDB"></dd>');
-var textbox = $('<input type="text" id="textIMDB" placeholder="IMDB ID，如tt1234567" style="margin-left: 5px;" />');
+var textbox = $('<input type="text" id="textIMDB" placeholder="IMDB ID，如tt1234567" style="" />');
 var doubanTextbox = $('<input type="text" id="textDouban" placeholder="豆瓣ID，如1234567" style="margin-left: 5px;" />');
 var mTimeTextbox = $('<input type="text" id="textMTime" placeholder="时光网ID，如123456" style="margin-left: 5px;" />');
-var select = $('<span id="selectType"><input type="radio" value="movie" id="movie" name="type" checked="checked"><label for="movie">电影</label><input type="radio" value="drama" id="drama" name="type"><label for="drama">美剧</label></span>');
+var bgmTextbox = $('<input type="text" id="textBangumi" placeholder="Bangumi ID，如123456" style="display: none;" />');
+var anidbTextbox = $('<input type="text" id="textAniDB" placeholder="AniDB ID，如123456" style="margin-left: 5px; display: none;" />');
+var select = $('<span id="selectType">' + 
+	'<input type="radio" value="movie" id="movie" name="type" checked="checked"><label for="movie">电影</label>' + 
+	'<input type="radio" value="drama" id="drama" name="type"><label for="drama">美剧</label>' + 
+	'<input type="radio" value="animation" id="animation" name="type"><label for="animation">动画</label>' + 
+	'</span>');
 var links = $('<div id="generateWithIMDB_Links"></div>');
 var buttonGo = $('<input type="button" id="searchIMDB" style="margin-left:5px;padding: 3px 5px;" value="生成" />');
 buttonGo.click(spawner);
-$(form).append(textbox).append(doubanTextbox).append(mTimeTextbox).append(select).append(buttonGo).append(links);
+$(form).append(textbox).append(doubanTextbox).append(mTimeTextbox).append(bgmTextbox).append(anidbTextbox).append(select).append(buttonGo).append(links);
 $('dl#post_header').append(description).append(form);
+$('#movie, #drama').click(function() {
+	$('#textIMDB').show();
+	$('#textDouban').show();
+	$('#textMTime').show();
+	$('#textAniDB').hide();
+	$('#textBangumi').hide();
+});
+$('#animation').click(function() {
+	$('#textIMDB').hide();
+	$('#textDouban').hide();
+	$('#textMTime').hide();
+	$('#textAniDB').show();
+	$('#textBangumi').show();
+});

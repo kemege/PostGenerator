@@ -1,6 +1,6 @@
 {
     "name": "FDUPT Post Generator",
-    "version": "1.5",
+    "version": "1.6",
     "manifest_version": 2,
     "icons": {
       "128": "icon-128.png"
@@ -20,6 +20,8 @@
       "http://api.douban.com/",
       "http://www.imdb.com/",
       "http://movie.mtime.com/",
-      "http://*.media-imdb.com/"
+      "http://*.media-imdb.com/",
+      "http://bgm.tv/",
+      "http://api.anidb.net/"
     ]
 }
