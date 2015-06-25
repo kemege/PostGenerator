@@ -68,63 +68,38 @@ function parseTemplate(template) {
 	});
 }
 
-function searchDouban(title) {
-	console.debug('Searching Douban with "' + title + '"......');
-	$.ajax({
-		url: 'http://api.douban.com/v2/movie/search?&count=5&q=' + title,
-		type: 'GET',
-		processData: true,
-		async: false,
-		dataType: 'json',
-		success: function(data) {
-			// parse Douban JSON search results array here
-			if (data['total']>1) {
-				// prompt for selection
-				var dialog = document.createElement('div');
-				dialog.style = 'display:none;';
-				dialog.setAttribute('title', '请选择最匹配的豆瓣条目');
-				dialog.id = 'promptDouban';
-				document.body.appendChild(dialog);
-				dialog.innerHTML = '';
-				for (var i in data['subjects']) {
-					dialog.innerHTML += '<button class="selectDouban" douban="'+data['subjects'][i]['id']+'">'+data['subjects'][i]['original_title']+' / '+data['subjects'][i]['title']+' ('+data['subjects'][i]['year']+') ['+data['subjects'][i]['subtype']+']</button><br/>';
-				};
-				dialog.innerHTML += '<button id="skipDouban">不，这些都不匹配</button><br/>';
-				dialog.innerHTML = '<center>' + dialog.innerHTML + '</center>';
-				$('.selectDouban').button().click(function() {
-					// fetch data for selected Douban ID
-					doubanID = parseInt($(this).attr('douban'));
-					$('#promptDouban').dialog('destroy');
-					fetchDouban();
-				});
-				$('#skipDouban').button().click(function() {
-					$('#promptDouban').dialog('destroy');
-					doubanID = 0;
-					fetchDouban();
-				});
-				$('#promptDouban').dialog({
-					width: 600
-				});
-			} else if (data['total'] == 1) {
-				doubanID = parseInt(data['subjects'][0]['id']);
-				fetchDouban();
-			} else {
-				fetchMTime();
-			}
-		},
-		error: function () {
-			displayMessage('错误', '无法连接到豆瓣网站。<br/>请检查您的外网连接。');
-			return 233;
-		}
-	});
+function getURL(url) {
+  return new Promise(function(resolve, reject) {
+    var req = new XMLHttpRequest();
+    req.open('GET', url);
+
+    req.onload = function() {
+      if (req.status == 200) {
+        resolve(req.response);
+      }
+      else {
+        reject(Error(req.statusText));
+      }
+    };
+
+    req.onerror = function() {
+      reject(Error("Network Error"));
+    };
+
+    req.send();
+  });
+}
+
+function showError(err) {
+	console.log(err);
 }
 
 function fillForm() {
 	console.debug('Generating post content ......');
-	var textTitle = document.querySelector('input.input_text[name=subject]');
-	var textMessage = document.querySelector('textarea.editor[name=message]');
-	var textIMDB = document.querySelector('input#imdb[name=imdb]');
-	var textDouban = document.querySelector('input#douban[name=douban]');
+	var textTitle = $('input.input_text[name=subject]');
+	var textMessage = $('textarea.editor[name=message]');
+	var textIMDB = $('input#imdb[name=imdb]');
+	var textDouban = $('input#douban[name=douban]');
 	var templateMessage;
 	if ($('input[name="type"]:checked', '#selectType').val()=='movie') {
 		// movie template
@@ -137,14 +112,14 @@ function fillForm() {
 	if (!('alias' in dataArray) || dataArray['alias'] == '') {
 		templateMessage = templateMessage.replace('◎别　　　名: __alias__\n', '');
 	};
-	textTitle.value = parseTemplate(templateTitle);
-	if(parseInt(imdbID) > 0) textIMDB.value = imdbID;
-	if(parseInt(doubanID) > 0) textDouban.value = doubanID;
-	textMessage.value = parseTemplate(templateMessage);
+	textTitle.val(parseTemplate(templateTitle));
+	if(parseInt(imdbID) > 0) textIMDB.val(imdbID);
+	if(parseInt(doubanID) > 0) textDouban.val(doubanID);
+	textMessage.val(parseTemplate(templateMessage));
 	// append IMDB and Douban links for correction
-	var IMDBLink = ' IMDB链接 : ' + (imdbID?('<a target="_blank" href="'+'http://www.imdb.com/title/tt' + imdbID+'">'+'http://www.imdb.com/title/tt' + imdbID+'</a>'):'无');
-	IMDBLink += ' 豆瓣链接 : ' + (doubanID?('<a target="_blank" href="'+'http://movie.douban.com/subject/' + doubanID+'">'+'http://movie.douban.com/subject/' + doubanID+'</a>'):'无');
-	IMDBLink += ' 时光网链接 : ' + (mTimeID?('<a target="_blank" href="'+'http://movie.mtime.com/' + mTimeID + '/fullcredits.html">'+'http://movie.mtime.com/' + mTimeID + '/fullcredits.html</a>'):'无');
+	var IMDBLink = ' IMDB链接 : ' + (imdbID ? ('<a target="_blank" href="'+'http://www.imdb.com/title/tt' + imdbID+'">'+'http://www.imdb.com/title/tt' + imdbID+'</a>') : '无');
+	IMDBLink += ' 豆瓣链接 : ' + (doubanID ? ('<a target="_blank" href="'+'http://movie.douban.com/subject/' + doubanID+'">'+'http://movie.douban.com/subject/' + doubanID+'</a>') : '无');
+	IMDBLink += ' 时光网链接 : ' + (mTimeID ? ('<a target="_blank" href="'+'http://movie.mtime.com/' + mTimeID + '/fullcredits.html">'+'http://movie.mtime.com/' + mTimeID + '/fullcredits.html</a>') : '无');
 	$('#generateWithIMDB_Links').html(IMDBLink);
 	// fill in tags
 	if ($('input[name="type"]:checked', '#selectType').val()=='movie') {
@@ -152,48 +127,6 @@ function fillForm() {
 	} else {
 		$('input[name=tags]').val(dataArray['genres'].join('|'));
 	}
-}
-
-function fetchDouban() {
-	if (!(parseInt(doubanID)>0)) {
-		console.debug('Invalid Douban ID! Checking MTime....');
-		fetchMTime();
-		return 2333;
-	}
-	console.debug('Fetching data for Douban='+doubanID);
-	$.ajax({
-		url: 'http://api.douban.com/v2/movie/subject/' + doubanID,
-		type: 'GET',
-		processData: true,
-		async: false,
-		dataType: 'json',
-		success: function(data) {
-			// parse Douban JSON array here
-			dataArray['translated_title'] = data['title'];
-			dataArray['plot'] = data['summary'].replace(/\n/g, '\n　　');
-			dataArray['alias'] = data['aka'].join('/');
-			dataArray['country'] = data['countries'].join('/');
-			if (data['casts'].length>0) {
-				dataArray['actors_list'] = [];
-				for (var cast in data['casts']) {
-					dataArray['actors_list'].push(data['casts'][cast]['name']);
-				}
-				dataArray['actors'] = dataArray['actors_list'].join('/');
-			};
-			if (data['directors'].length>0) {
-				dataArray['directors_list'] = [];
-				for (var director in data['directors']) {
-					dataArray['directors_list'].push(data['directors'][director]['name']);
-				}
-				dataArray['director'] = dataArray['directors_list'].join('/');
-			};
-			fetchMTime();
-		},
-		error: function () {
-			displayMessage('错误', '无法连接到豆瓣网站。<br/>请检查您的外网连接。');
-			return 233;
-		}
-	});
 }
 
 function fetchIMDB() {
@@ -204,63 +137,38 @@ function fetchIMDB() {
 		async: false,
 		dataType: 'text',
 		success: function(data) {
-			// parse IMDB DOM here
-			imdbPage = $(data);
-			dataArray['imdbID'] = imdbID;
-			dataArray['title'] = imdbPage.find('h1.header span.itemprop[itemprop=name]').text();
-			dataArray['ratingValue'] = imdbPage.find('span[itemprop=ratingValue]').text();
-			dataArray['ratingCount'] = imdbPage.find('span[itemprop=ratingCount]').text();
-			dataArray['plot'] = imdbPage.find('div.inline[itemprop=description]').text().trim().replace(/[ \n\t]+/g, ' ');
-			dataArray['year'] = imdbPage.find('h1.header .nobr').text();
-			dataArray['year'] = /\d{4}/.exec(dataArray['year']);
-			dataArray['time'] = new Date();
-			dataArray['today'] = dataArray['time'].getFullYear() + '' + (dataArray['time'].getMonth()<9?'0'+(dataArray['time'].getMonth()+1):dataArray['time'].getMonth()+1) + '' + (dataArray['time'].getDate()<10?'0'+dataArray['time'].getDate():dataArray['time'].getDate());
-			imdbPage.find('div.see-more[itemprop=genre] a').each(function() {
-				dataArray['genres'].push($(this).text().trim());
+			
+
+			// fetch poster
+			var posterPageLink = imdbPage.find('#img_primary div.image a');
+			var posterPageURL = posterPageLink[0].href;
+
+			$.ajax({
+				url: posterPageURL.replace('http://pt.vm.fudan.edu.cn', 'http://www.imdb.com'),
+				type: 'GET',
+				processData: true,
+				async: false,
+				dataType: 'text',
+				success: function(data2) {
+					var posterPage = $(data2);
+					var posterURL = posterPage.find('#primary-img')[0].src;
+					dataArray['posterURL'] = posterURL;
+					console.log(posterURL);
+
+					// fetch poster image as blob
+					var xhr = new XMLHttpRequest();
+					xhr.onreadystatechange = function() {
+						if (this.readyState == 4 && this.status == 200) {
+							var url = window.URL || window.webkitURL;
+							$('#postAttachment2').append('<dd><img id="poster" src="" /></dd>');
+							document.getElementById('poster').src = url.createObjectURL(this.response);
+						};
+					};
+					xhr.open('GET', posterURL);
+					xhr.responseType = 'blob';
+					xhr.send();
+				}
 			});
-
-			directorTag = imdbPage.find('div.txt-block[itemprop=director] a span[itemprop=name]');
-			directorTag.each(function (index, element) {
-				dataArray['directors'].push($(this).text());
-			});
-			dataArray['director'] = dataArray['directors'].join("/");
-
-			imdbPage.find('div.txt-block[itemprop=creator] a span[itemprop=name]').each(function () {
-				dataArray['writers'].push($(this).text());
-			});
-			dataArray['writer'] = dataArray['writers'].join("/");
-
-			castTag = imdbPage.find('div#titleCast .cast_list');
-			castTag.find('tr').each(function() {
-				if (this.className=="") return;
-				dataArray['actors'].push($(this).find('.itemprop[itemprop=actor]').text().trim() + '  ......  ' + $(this).find('td.character div').text().trim().replace(/[ \n\t]+/g, ' '));
-			});
-			dataArray['actors'] = dataArray['actors'].join('\n　　　　　　　');
-
-			dataArray['genre'] = translateGenre(dataArray['genres']);
-
-			// console.log(imdbPage.find('#titleDetails > div:nth-child(4) a'));
-			if (imdbPage.find('#titleDetails > div:nth-child(4) h4').text().indexOf('Language')>-1) {
-				imdbPage.find('#titleDetails > div:nth-child(4) a').each(function () {
-					dataArray['languages'].push($(this).text());
-				});
-			} else if (imdbPage.find('#titleDetails > div:nth-child(5) h4').text().indexOf('Language')>-1) {
-				imdbPage.find('#titleDetails > div:nth-child(5) a').each(function () {
-					dataArray['languages'].push($(this).text());
-				});
-			};
-			dataArray['language'] = dataArray['languages'].join('/');
-
-			if (imdbPage.find('#titleDetails > div:nth-child(4) h4').text().indexOf('Country')>-1) {
-				imdbPage.find('#titleDetails > div:nth-child(4) a').each(function () {
-					dataArray['countries'].push($(this).text());
-				});
-			} else if (imdbPage.find('#titleDetails > div:nth-child(3) h4').text().indexOf('Country')>-1) {
-				imdbPage.find('#titleDetails > div:nth-child(3) a').each(function () {
-					dataArray['countries'].push($(this).text());
-				});
-			};
-			dataArray['country'] = dataArray['countries'].join('/');
 			console.log(dataArray);
 		},
 		error: function () {
@@ -276,50 +184,145 @@ function fetchIMDB() {
 	};
 }
 
-function fetchMTime() {
-	if (!(parseInt(mTimeID)>0)) {
-		console.debug('Invalid MTime ID!');
-		fillForm();
-		return 23;
-	}
-	console.debug('Fetching data for MTime='+mTimeID);
-	$.ajax({
-		url: 'http://movie.mtime.com/' + mTimeID + '/fullcredits.html',
-		type: 'GET',
-		processData: true,
-		async: false,
-		dataType: 'text',
-		success: function(data) {
-			// parse MTime page here
-			mTimePage = $(data);
-			// replace Actor list
-			dataArray['actors'] = [];
-			mTimePage.find('.db_actor dl dd').each(function (index, element) {
-				if (index>=30) {
-					return;
-				};
-				var actor = $(element).find('.actor_tit').text().trim().replace(/ +/g, ' ');
-				var character = $(element).find('.character_tit').text().trim().replace(/ +/g, ' ');
-				if (character.trim()=='') {
-					dataArray['actors'].push(actor);
-				} else {
-					dataArray['actors'].push(actor + '  ......  ' + character);
-				};
-				
-			});
-			dataArray['actors'] = dataArray['actors'].join('\n　　　　　　　');
-			fillForm();
-		},
-		error: function () {
-			displayMessage('错误', '无法连接到MTime网站。<br/>请检查您的外网连接。');
-			return 233;
-		}
+function parseIMDB(data) {
+	// parse IMDB DOM here
+	imdbPage = $(data);
+	dataArray['imdbID'] = imdbID;
+	dataArray['title'] = imdbPage.find('h1.header span.itemprop[itemprop=name]').text();
+	dataArray['ratingValue'] = imdbPage.find('span[itemprop=ratingValue]').text();
+	dataArray['ratingCount'] = imdbPage.find('span[itemprop=ratingCount]').text();
+	dataArray['plot'] = imdbPage.find('div.inline[itemprop=description]').text().trim().replace(/[ \n\t]+/g, ' ');
+	dataArray['year'] = imdbPage.find('h1.header .nobr').text();
+	dataArray['year'] = /\d{4}/.exec(dataArray['year']);
+	dataArray['time'] = new Date();
+	dataArray['today'] = dataArray['time'].getFullYear() + '' + (dataArray['time'].getMonth()<9?'0'+(dataArray['time'].getMonth()+1):dataArray['time'].getMonth()+1) + '' + (dataArray['time'].getDate()<10?'0'+dataArray['time'].getDate():dataArray['time'].getDate());
+	imdbPage.find('div.see-more[itemprop=genre] a').each(function() {
+		dataArray['genres'].push($(this).text().trim());
 	});
+
+	directorTag = imdbPage.find('div.txt-block[itemprop=director] a span[itemprop=name]');
+	directorTag.each(function (index, element) {
+		dataArray['directors'].push($(this).text());
+	});
+	dataArray['director'] = dataArray['directors'].join("/");
+
+	imdbPage.find('div.txt-block[itemprop=creator] a span[itemprop=name]').each(function () {
+		dataArray['writers'].push($(this).text());
+	});
+	dataArray['writer'] = dataArray['writers'].join("/");
+
+	castTag = imdbPage.find('div#titleCast .cast_list');
+	castTag.find('tr').each(function() {
+		if (this.className=="") return;
+		dataArray['actors'].push($(this).find('.itemprop[itemprop=actor]').text().trim() + '  ......  ' + $(this).find('td.character div').text().trim().replace(/[ \n\t]+/g, ' '));
+	});
+	dataArray['actors'] = dataArray['actors'].join('\n　　　　　　　');
+
+	dataArray['genre'] = translateGenre(dataArray['genres']);
+
+	// console.log(imdbPage.find('#titleDetails > div:nth-child(4) a'));
+	if (imdbPage.find('#titleDetails > div:nth-child(4) h4').text().indexOf('Language')>-1) {
+		imdbPage.find('#titleDetails > div:nth-child(4) a').each(function () {
+			dataArray['languages'].push($(this).text());
+		});
+	} else if (imdbPage.find('#titleDetails > div:nth-child(5) h4').text().indexOf('Language')>-1) {
+		imdbPage.find('#titleDetails > div:nth-child(5) a').each(function () {
+			dataArray['languages'].push($(this).text());
+		});
+	};
+	dataArray['language'] = dataArray['languages'].join('/');
+
+	if (imdbPage.find('#titleDetails > div:nth-child(4) h4').text().indexOf('Country')>-1) {
+		imdbPage.find('#titleDetails > div:nth-child(4) a').each(function () {
+			dataArray['countries'].push($(this).text());
+		});
+	} else if (imdbPage.find('#titleDetails > div:nth-child(3) h4').text().indexOf('Country')>-1) {
+		imdbPage.find('#titleDetails > div:nth-child(3) a').each(function () {
+			dataArray['countries'].push($(this).text());
+		});
+	};
+	dataArray['country'] = dataArray['countries'].join('/');
 }
 
-function go() {
+function parseMTime(page) {
+	// parse MTime page here
+	mTimePage = $(page);
+	// replace Actor list
+	dataArray['actors'] = [];
+	mTimePage.find('.db_actor dl dd').each(function (index, element) {
+		if (index>=30) {
+			return;
+		};
+		var actor = $(element).find('.actor_tit').text().trim().replace(/ +/g, ' ');
+		var character = $(element).find('.character_tit').text().trim().replace(/ +/g, ' ');
+		if (character.trim()=='') {
+			dataArray['actors'].push(actor);
+		} else {
+			dataArray['actors'].push(actor + '  ......  ' + character);
+		};
+		
+	});
+	dataArray['actors'] = dataArray['actors'].join('\n　　　　　　　');
+}
+
+function parseDouban(data) {
+	// parse Douban JSON array here
+	dataArray['translated_title'] = data['title'];
+	dataArray['plot'] = data['summary'].replace(/\n/g, '\n　　');
+	dataArray['alias'] = data['aka'].join('/');
+	dataArray['country'] = data['countries'].join('/');
+	if (data['casts'].length>0) {
+		dataArray['actors_list'] = [];
+		for (var cast in data['casts']) {
+			dataArray['actors_list'].push(data['casts'][cast]['name']);
+		}
+		dataArray['actors'] = dataArray['actors_list'].join('/');
+	};
+	if (data['directors'].length>0) {
+		dataArray['directors_list'] = [];
+		for (var director in data['directors']) {
+			dataArray['directors_list'].push(data['directors'][director]['name']);
+		}
+		dataArray['director'] = dataArray['directors_list'].join('/');
+	};
+}
+
+function parseDoubanSearch(data) {
+	var defer = $.Deferred();
+	// parse Douban JSON search results array here
+	if (data['total']>1) {
+		// prompt for selection
+		var dialog = $('<div style="display:none;" title="请选择最匹配的豆瓣条目" id="promptDouban"></div>');
+		$('body').append(dialog);
+		dialogInnerHTML = '';
+		for (var i in data['subjects']) {
+			dialogInnerHTML += '<button class="selectDouban" douban="'+data['subjects'][i]['id']+'">'+data['subjects'][i]['original_title']+' / '+data['subjects'][i]['title']+' ('+data['subjects'][i]['year']+') ['+data['subjects'][i]['subtype']+']</button><br/>';
+		};
+		dialogInnerHTML += '<button id="skipDouban">不，这些都不匹配</button><br/>';
+		dialogInnerHTML = '<center>' + dialogInnerHTML + '</center>';
+		dialog.html(dialogInnerHTML);
+		$('.selectDouban').button().click(function() {
+			// fetch data for selected Douban ID
+			$('#promptDouban').dialog('destroy');
+			defer.resolve(parseInt($(this).attr('douban')));
+		});
+		$('#skipDouban').button().click(function() {
+			$('#promptDouban').dialog('destroy');
+			defer.resolve(0);
+		});
+		$('#promptDouban').dialog({
+			width: 600
+		});
+	} else if (data['total'] == 1) {
+		defer.resolve(parseInt(data['subjects'][0]['id']));
+	}
+
+	return defer.promise();
+}
+
+function *go() {
 	imdbID = $('input#textIMDB').val();
-	imdbID = /tt(\d+)/.exec(imdbID) ? /tt(\d+)/.exec(imdbID)[1] : '';
+	imdbID = /(\d+)/.exec(imdbID) ? /(\d+)/.exec(imdbID)[1] : '';
 	doubanID = $('input#textDouban').val();
 	mTimeID = $('input#textMTime').val();
 	dataArray = {
@@ -331,42 +334,79 @@ function go() {
 		'writers': [],
 		'countries': []
 	}
-	if (parseInt(imdbID)>0)
-		fetchIMDB();
+
+	try {
+		if (parseInt(imdbID) > 0) {
+			IMDBPage = yield getURL('http://www.imdb.com/title/tt' + imdbID);
+			IMDBPage = IMDBPage.replace(/<img/g, '<nimg'); // Avoid loading images in IMDB Page
+			parseIMDB(IMDBPage);
+			hasData = true;
+			console.log('Getting IMDB');
+		}
+		if (!(parseInt(doubanID) > 0)) {
+			searchDoubanJSON = yield getURL('http://api.douban.com/v2/movie/search?&count=5&q=' + dataArray['title']).then(JSON.parse, showError);
+			searchDouban = yield parseDoubanSearch(searchDoubanJSON).then(function (res) {doubanID = res;});
+			console.log('Search Finished.');console.log(doubanID);
+		}
+		if (parseInt(doubanID) > 0) {
+			DoubanPage = yield getURL('http://api.douban.com/v2/movie/subject/' + doubanID).then(JSON.parse, showError);
+			parseDouban(DoubanPage);
+			hasData = true;
+			console.log('Getting Douban');
+		}
+		if (parseInt(mTimeID) > 0) {
+			MTimePage = yield getURL('http://movie.mtime.com/' + mTimeID + '/fullcredits.html');
+			parseMTime(MTimePage);
+		}
+	}
+	catch (err) {
+		showError(err);
+	}
+	
+	if (hasData) {
+		fillForm();
+	}
 }
+
+function spawn(generatorFunc) {
+	function continuer(verb, arg) {
+		var result;
+		try {
+			result = generator[verb](arg);
+		} catch (err) {
+			return Promise.reject(err);
+		}
+		if (result.done) {
+			return result.value;
+		} else {
+			return Promise.resolve(result.value).then(onFulfilled, onRejected);
+		}
+	}
+	var generator = generatorFunc();
+	var onFulfilled = continuer.bind(continuer, "next");
+	var onRejected = continuer.bind(continuer, "throw");
+	return onFulfilled();
+}
+
+function spawner() {
+	spawn(go);
+}
+
 // Register some functions and variables in the global scope
 var dataArray = {};
 var imdbID = undefined;
 var doubanID = undefined;
 var mTimeID = undefined;
+var hasData = false;
 // Add a textbox and a button for triggering
-var description = document.createElement('dt');
-description.innerHTML = '根据IMDB ID生成介绍贴';
-var form = document.createElement('dd');
-form.id = 'generateWithIMDB';
-var textbox = document.createElement('input');
-textbox.type = 'text';
-textbox.setAttribute('placeholder', 'IMDB ID，如tt1234567')
-textbox.id = 'textIMDB';
-var doubanTextbox = document.createElement('input');
-doubanTextbox.type = 'text';
-doubanTextbox.setAttribute('placeholder', '豆瓣ID，如1234567')
-doubanTextbox.id = 'textDouban';
-var mTimeTextbox = document.createElement('input');
-mTimeTextbox.type = 'text';
-mTimeTextbox.setAttribute('placeholder', '时光网ID，如123456')
-mTimeTextbox.id = 'textMTime';
-var select = document.createElement('span');
-select.id = 'selectType';
-select.innerHTML = '<input type="radio" value="movie" id="movie" name="type" checked="checked"/><label for="movie">电影</label><input type="radio" value="drama" id="drama" name="type"/><label for="drama">美剧</label>';
-var links = document.createElement('div');
-links.id = 'generateWithIMDB_Links';
-var buttonGo = document.createElement('input');
-buttonGo.type = 'button';
-buttonGo.id = 'searchOMDB';
-buttonGo.value = '生成';
-buttonGo.style = 'margin-left:5px;padding: 3px 5px;';
-buttonGo.onclick = go;
+var description = $('<dt>根据IMDB ID生成介绍贴</dt>');
+var form = $('<dd id="generateWithIMDB"></dd>');
+var textbox = $('<input type="text" id="textIMDB" placeholder="IMDB ID，如tt1234567" style="margin-left: 5px;" />');
+var doubanTextbox = $('<input type="text" id="textDouban" placeholder="豆瓣ID，如1234567" style="margin-left: 5px;" />');
+var mTimeTextbox = $('<input type="text" id="textMTime" placeholder="时光网ID，如123456" style="margin-left: 5px;" />');
+var select = $('<span id="selectType"><input type="radio" value="movie" id="movie" name="type" checked="checked"><label for="movie">电影</label><input type="radio" value="drama" id="drama" name="type"><label for="drama">美剧</label></span>');
+var links = $('<div id="generateWithIMDB_Links"></div>');
+var buttonGo = $('<input type="button" id="searchOMDB" style="margin-left:5px;padding: 3px 5px;" value="生成" />');
+buttonGo.click(spawner);
 $(form).append(textbox).append(doubanTextbox).append(mTimeTextbox).append(select).append(buttonGo).append(links);
 $('dl#post_header').append(description).append(form);
-// defineFunction('$(document).ready(function() {$("#selectType").buttonset();$("input#searchOMDB").button()});');
