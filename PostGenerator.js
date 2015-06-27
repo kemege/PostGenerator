@@ -435,7 +435,7 @@ function parseBangumi(page) {
 	});
 	dataArray['staff'] = dataArray['staff_list'].join('\n');
 
-	dataArray['plot'] = bgmPage.find('#subject_summary').text().trim();
+	dataArray['plot'] = bgmPage.find('#subject_summary').text().replace(/\n/g, '\n　　').trim();
 }
 
 function parseAniDB(data) {
@@ -582,32 +582,69 @@ var hasData = false;
 // Add a textbox and a button for triggering
 var description = $('<dt>根据IMDB ID生成介绍贴</dt>');
 var form = $('<dd id="generateWithIMDB"></dd>');
+
+// Textboxes for xxDB ID
+var searchDescription = $('<dt>搜索</dt>');
+var searchForm = $('<dd></dd>');
 var textbox = $('<input type="text" id="textIMDB" placeholder="IMDB ID，如tt1234567" style="" />');
 var doubanTextbox = $('<input type="text" id="textDouban" placeholder="豆瓣ID，如1234567" style="margin-left: 5px;" />');
 var mTimeTextbox = $('<input type="text" id="textMTime" placeholder="时光网ID，如123456" style="margin-left: 5px;" />');
 var bgmTextbox = $('<input type="text" id="textBangumi" placeholder="Bangumi ID，如123456" style="display: none;" />');
 var anidbTextbox = $('<input type="text" id="textAniDB" placeholder="AniDB ID，如123456" style="margin-left: 5px; display: none;" />');
+
+// Search Forms for xxDB
+var searchFormIMDB = $('<form target="_blank" method="GET" action="http://www.imdb.com/find" id="searchFormIMDB" style=" float: left;"><input type="text" name="q" class="searchForm" placeholder="搜索IMDB" style="" /><input type="hidden" name="s" value="all" /><input type="hidden" name="ref_" value="nv_sr_fn" /></form>');
+var searchFormDouban = $('<form target="_blank" method="GET" action="http://movie.douban.com/subject_search" id="searchFormDouban" style=" float: left;"><input type="text" name="search_text" class="searchForm" placeholder="搜索豆瓣" style="margin-left: 5px;" /></form>');
+var searchFormMTime = $('<form target="_blank" method="GET" action="http://search.mtime.com/search/" id="searchFormMTime" style=" float: left;"><input type="text" name="q" class="searchForm" placeholder="搜索时光网" style="margin-left: 5px;" /></form>');
+var searchFormBangumi = $('<input type="text" name="search_text" class="searchFormBangumi" id="searchFormBangumi" placeholder="搜索Bangumi" style="display: none; float: left;" />');
+var searchFormAniDB = $('<form target="_blank" method="GET" action="http://anidb.net/perl-bin/animedb.pl" id="searchFormAniDB" style="display: none; float: left;"><input type="text" name="adb.search" class="searchForm" placeholder="搜索AniDB" style="margin-left: 5px;" /><input type="hidden" name="show" value="animelist" /><input type="hidden" name="do.search" value="search" /></form>');
+
+// Select list for post types
 var select = $('<span id="selectType">' + 
 	'<input type="radio" value="movie" id="movie" name="type" checked="checked"><label for="movie">电影</label>' + 
 	'<input type="radio" value="drama" id="drama" name="type"><label for="drama">美剧</label>' + 
 	'<input type="radio" value="animation" id="animation" name="type"><label for="animation">动画</label>' + 
 	'</span>');
+
+// Area for xxDB Page Links
 var links = $('<div id="generateWithIMDB_Links"></div>');
+
+// Button to start working
 var buttonGo = $('<input type="button" id="searchIMDB" style="margin-left:5px;padding: 3px 5px;" value="生成" />');
 buttonGo.click(spawner);
+
+// Arrange all controls
 $(form).append(textbox).append(doubanTextbox).append(mTimeTextbox).append(bgmTextbox).append(anidbTextbox).append(select).append(buttonGo).append(links);
-$('dl#post_header').append(description).append(form);
+$(searchForm).append(searchFormIMDB).append(searchFormDouban).append(searchFormMTime).append(searchFormBangumi).append(searchFormAniDB);
+$('dl#post_header').append(description).append(form).append(searchDescription).append(searchForm);
+
+// Only show relevant textboxes for every post type
 $('#movie, #drama').click(function() {
-	$('#textIMDB').show();
-	$('#textDouban').show();
-	$('#textMTime').show();
-	$('#textAniDB').hide();
-	$('#textBangumi').hide();
+	$('#textIMDB, #textDouban, #textMTime, #searchFormIMDB, #searchFormDouban, #searchFormMTime').show();
+	$('#textAniDB, #textBangumi, #searchFormAniDB, #searchFormBangumi').hide();
 });
 $('#animation').click(function() {
-	$('#textIMDB').hide();
-	$('#textDouban').hide();
-	$('#textMTime').hide();
-	$('#textAniDB').show();
-	$('#textBangumi').show();
+	$('#textIMDB, #textDouban, #textMTime, #searchFormIMDB, #searchFormDouban, #searchFormMTime').hide();
+	$('#textAniDB, #textBangumi, #searchFormAniDB, #searchFormBangumi').show();
+});
+
+// Try to guess post type
+(function () {
+	var board = /(?:board\=)\d+/.exec(location.href);
+	if (board.length) {
+		var boardID = parseInt(board[0].slice(6));
+		if (boardID === 8) {
+			$('#animation').click();
+		}
+		if (boardID === 17) {
+			$('#drama').click();
+		}
+	}
+})();
+
+// Quick search Forms
+$('#searchFormBangumi').keypress(function (e) {
+	if (e.which == 13) {
+		window.open('http://bgm.tv/subject_search/' + $(this).val() + '?cat=2', '_blank');
+	}
 });
