@@ -646,5 +646,6 @@ $('#animation').click(function() {
 $('#searchFormBangumi').keypress(function (e) {
 	if (e.which == 13) {
 		window.open('http://bgm.tv/subject_search/' + $(this).val() + '?cat=2', '_blank');
+		return false;
 	}
 });
